@@ -9,6 +9,8 @@ RUN npm install
 RUN npx prisma generate
 RUN npm run build
 RUN mkdir -p /app/prisma
+ENV DATABASE_URL="file:/app/prisma/dev.db"
+ENV PORT=3002
 EXPOSE 3002
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/index.js"]
