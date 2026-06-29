@@ -4,7 +4,6 @@
     "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
-    "startCommand": "npm run dev",
     "restartPolicyType": "ALWAYS",
     "healthcheckPath": "/api/market-status"
   }
