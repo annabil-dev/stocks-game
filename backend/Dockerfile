@@ -10,7 +10,6 @@ RUN npx prisma generate
 RUN npm run build
 RUN mkdir -p /app/prisma
 ENV DATABASE_URL="file:/app/prisma/dev.db"
-ENV PORT=3002
-EXPOSE 3002
+EXPOSE 8080
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
