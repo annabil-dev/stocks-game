@@ -1,6 +1,6 @@
-FROM node:20-slim
+FROM node:20-alpine
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends dumb-init openssl && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache dumb-init openssl
 COPY backend/package*.json ./
 COPY backend/prisma ./prisma/
 COPY backend/tsconfig.json ./
