@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String      @id @default(uuid())
+  email          String      @unique
+  passwordHash   String
+  cashBalance    BigInt      @default(100000000)
+  createdAt      DateTime    @default(now())
+  portfolios     Portfolio[]
+  bots           Bot[]
+  orders         Order[]
+  equitySnapshots EquitySnapshot[]
+  realizedTrades  RealizedTrade[]
+}
+
+model Stock {
+  id             String      @id @default(uuid())
+  ticker         String      @unique // e.g. BBCA.JK
+  name           String
+  initialPrice   Int
+  lastPrice      Int
+  previousClose  Int     @default(0)
+  referencePrice Int     @default(0)   // Harga acuan harian untuk ARA/ARB
+  araPrice       Int     @default(0)   // Batas atas (Auto Rejection Atas)
+  arbPrice       Int     @default(0)   // Batas bawah (Auto Rejection Bawah)
+  isSeeded       Boolean @default(false)
+  createdAt      DateTime    @default(now())
+  portfolios     Portfolio[]
+  orders         Order[]
+  trades         Trade[]     @relation("TradeStock")
+  realizedTrades RealizedTrade[]
+}
+
+model Portfolio {
+  id        String   @id @default(uuid())
+  userId    String
+  stockId   String
+  quantity  Int      @default(0)
+  avgPrice  Int      @default(0)
+  user      User     @relation(fields: [userId], references: [id])
+  stock     Stock    @relation(fields: [stockId], references: [id])
+
+  @@unique([userId, stockId])
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  userId           String
+  stockId          String
+  side             String      // "BID" | "OFFER"
+  price            Int
+  quantity         Int
+  remainingQuantity Int
+  status           String      @default("OPEN") // "OPEN" | "PARTIAL" | "FILLED" | "CANCELLED" | "REJECTED"
+  createdAt        DateTime    @default(now())
+  brokerId         String?     // Dummy broker for visual display
+
+  user             User        @relation(fields: [userId], references: [id])
+  stock            Stock       @relation(fields: [stockId], references: [id])
+  broker           Broker?     @relation(fields: [brokerId], references: [id])
+  
+  buyTrades        Trade[]     @relation("TradeBuyOrder")
+  sellTrades       Trade[]     @relation("TradeSellOrder")
+
+  @@index([userId])
+  @@index([stockId, side, status])
+}
+
+model Broker {
+  id        String   @id @default(uuid())
+  code      String   @unique          // 2-letter code, e.g. "AK", "CC"
+  name      String                    // Fictitious securities name
+  createdAt DateTime @default(now())
+
+  orders    Order[]
+}
+
+model Trade {
+  id          String   @id @default(uuid())
+  stockId     String
+  buyOrderId  String
+  sellOrderId String
+  price       Int
+  quantity    Int
+  type        String   // "HAKA" | "HAKI" | "MATCH"
+  executedAt  DateTime @default(now())
+
+  stock       Stock    @relation("TradeStock", fields: [stockId], references: [id])
+  buyOrder    Order    @relation("TradeBuyOrder", fields: [buyOrderId], references: [id])
+  sellOrder   Order    @relation("TradeSellOrder", fields: [sellOrderId], references: [id])
+
+  @@index([stockId])
+  @@index([buyOrderId])
+  @@index([sellOrderId])
+  @@index([executedAt])
+}
+
+model Bot {
+  id             String   @id @default(uuid())
+  ownerUserId    String
+  type           String   // "NORMAL" | "INSTITUTION"
+  stockFocus     String?  // Ticker or empty for all
+  strategyConfig String?  // Store JSON as a string
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  
+  owner          User     @relation(fields: [ownerUserId], references: [id])
+}
+
+model SystemConfig {
+  key   String @id
+  value String
+}
+
+model EquitySnapshot {
+  id              String   @id @default(uuid())
+  userId          String
+  cashBalance     BigInt                   // Cash component of equity
+  portfolioValue  BigInt                   // Stock holdings value (qty * lastPrice)
+  totalEquity     BigInt                   // cashBalance + portfolioValue
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model RealizedTrade {
+  id          String   @id @default(uuid())
+  userId      String
+  stockId     String
+  quantity    Int                          // Number of shares in this realized trade
+  buyPrice    Int                          // avgPrice from portfolio at time of sale
+  sellPrice   Int                          // execution price of the sell
+  profitLoss  Int                          // (sellPrice - buyPrice) * quantity
+  closedAt    DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  stock       Stock    @relation(fields: [stockId], references: [id])
+
+  @@index([userId, stockId])
+}
