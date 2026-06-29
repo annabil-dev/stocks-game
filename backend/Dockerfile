@@ -11,4 +11,4 @@ RUN npm run build
 RUN mkdir -p /app/prisma
 EXPOSE 3002
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
