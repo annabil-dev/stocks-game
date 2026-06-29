@@ -13,4 +13,4 @@ ENV DATABASE_URL="file:/app/prisma/dev.db"
 ENV PORT=3002
 EXPOSE 3002
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
